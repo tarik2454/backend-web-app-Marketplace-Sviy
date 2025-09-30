@@ -4,6 +4,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { DatabaseModule } from './database/database.module';
+import { UsersModule } from './users/users.module';
+import { ProductsModule } from './products/products.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -33,7 +36,10 @@ import { DatabaseModule } from './database/database.module';
     }),
 
     DatabaseModule,
-    AuthModule,
+    // AuthModule,
+    UsersModule,
+    ProductsModule,
+    OrdersModule,
   ],
 })
 export class AppModule {}
