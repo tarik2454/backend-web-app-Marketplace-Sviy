@@ -15,7 +15,8 @@ export class UsersService {
   }
 
   findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
+    const allUsers = this.userModel.find().exec();
+    return allUsers;
   }
 
   findOne(id: string): Promise<User | null> {
@@ -31,11 +32,15 @@ export class UsersService {
     if (!updatedUser) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
-
-    return updatedUser; // теперь точно User
+    return updatedUser;
   }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} user`;
-  // }
+  async remove(id: string): Promise<User> {
+    const deletedUser = await this.userModel.findByIdAndDelete(id).exec();
+
+    if (!deletedUser) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return deletedUser;
+  }
 }

@@ -28,14 +28,14 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
-    const users = this.usersService.findAll();
+  async findAll() {
+    const users = await this.usersService.findAll();
     return users;
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    const user = this.usersService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const user = await this.usersService.findOne(id);
     return user;
   }
 
@@ -46,8 +46,10 @@ export class UsersController {
     return { _id, name, email, role };
   }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.usersService.remove(id);
-  // }
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.usersService.remove(id);
+
+    return { message: `User with id ${id} successfully deleted` };
+  }
 }
