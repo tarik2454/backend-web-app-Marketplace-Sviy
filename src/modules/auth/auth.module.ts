@@ -3,12 +3,11 @@
 // import { AuthSchema, User } from '../users/schemas/user.schema';
 // import { AuthService } from './auth.service';
 // import { AuthController } from './auth.controller';
+// import { UsersModule } from '../users/users.module';
 
 // @Module({
-//   imports: [
-//     MongooseModule.forFeature([{ name: User.name, schema: AuthSchema }]),
-//   ],
-//   providers: [AuthService],
+//   imports: [UsersModule, JwtModule.register({...})],
+//   providers: [AuthService, LocalStrategy, JwtStrategy],
 //   controllers: [AuthController],
 // })
 // export class AuthModule {}

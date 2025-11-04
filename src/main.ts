@@ -10,8 +10,17 @@ async function bootstrap() {
 
   // app.useLogger(app.get(Logger));
   // main.ts
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
   app.setGlobalPrefix('api');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // удаляет лишние поля
+      forbidNonWhitelisted: true, // выброс ошибки при лишних полях
+      transform: true, // автоматически превращает JSON в DTO
+    }),
+  );
+
   await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();
