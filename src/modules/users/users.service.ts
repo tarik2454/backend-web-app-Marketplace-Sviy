@@ -14,13 +14,17 @@ export class UsersService {
     return newUser.save();
   }
 
-  findAll(): Promise<User[]> {
-    const allUsers = this.userModel.find().exec();
+  async findAll(): Promise<User[]> {
+    const allUsers = await this.userModel.find().exec();
     return allUsers;
   }
 
-  findOne(id: string): Promise<User | null> {
-    const user = this.userModel.findById(id).exec();
+  async findOne(id: string): Promise<User> {
+    const user = await this.userModel.findById(id).exec();
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
     return user;
   }
 
