@@ -1,26 +1,25 @@
+// main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-// import { Logger } from 'nestjs-pino';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    // bufferLogs: true,
+    bufferLogs: true,
   });
 
-  // app.useLogger(app.get(Logger));
-  // main.ts
+  app.useLogger(app.get(Logger));
 
   app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // удаляет лишние поля
-      forbidNonWhitelisted: true, // выброс ошибки при лишних полях
-      transform: true, // автоматически превращает JSON в DTO
+      whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(3001);
 }
 bootstrap();

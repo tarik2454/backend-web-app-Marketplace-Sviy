@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-// import { AuthModule } from './modules/auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
@@ -7,10 +7,15 @@ import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './modules/users/users.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import config from './config/config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [config],
+      envFilePath: '.env',
+    }),
 
     LoggerModule.forRoot({
       pinoHttp: {
@@ -36,7 +41,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     }),
 
     DatabaseModule,
-    // AuthModule,
+    AuthModule,
     UsersModule,
     ProductsModule,
     OrdersModule,
