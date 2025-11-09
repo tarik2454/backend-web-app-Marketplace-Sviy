@@ -11,7 +11,7 @@ import { User } from '../users/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { RefreshToken } from './schemas/refresh-token';
-import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -25,12 +25,8 @@ export class AuthService {
   async register(registerData: RegisterDto) {
     const { email, password, name } = registerData;
 
-    const emailInUse = await this.userModel.findOne({
-      email,
-    });
-    if (emailInUse) {
-      throw new BadRequestException('Email already in use');
-    }
+    const emailExists = await this.userModel.findOne({ email });
+    if (emailExists) throw new BadRequestException('Email already in use');
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -41,18 +37,14 @@ export class AuthService {
     });
   }
 
-  async login(credentials: LoginDto) {
-    const { email, password } = credentials;
+  async login(loginData: LoginDto) {
+    const { email, password } = loginData;
 
     const user = await this.userModel.findOne({ email });
-    if (!user) {
-      throw new UnauthorizedException('Wrong credentials');
-    }
+    if (!user) throw new UnauthorizedException('Wrong credentials');
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      throw new UnauthorizedException('Wrong credentials');
-    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) throw new UnauthorizedException('Wrong credentials');
 
     const tokens = await this.generateUserToken(String(user._id));
     return {
@@ -61,22 +53,20 @@ export class AuthService {
     };
   }
 
-  async refreshToken(refreshToken: string) {
-    const token = await this.refreshTokenModel.findOneAndDelete({
-      token: refreshToken,
+  async refreshToken(oldRefreshToken: string) {
+    const tokenDoc = await this.refreshTokenModel.findOneAndDelete({
+      token: oldRefreshToken,
       expiryDate: { $gte: new Date() },
     });
 
-    if (!token) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+    if (!tokenDoc) throw new UnauthorizedException('Invalid refresh token');
 
-    return this.generateUserToken(String(token.userId));
+    return this.generateUserToken(tokenDoc.userId.toString());
   }
 
   async generateUserToken(userId: string) {
     const accessToken = this.jwtService.sign({ userId }, { expiresIn: '1h' });
-    const refreshToken = uuidv4();
+    const refreshToken = randomBytes(64).toString('hex');
 
     await this.storeRefreshToken(refreshToken, userId);
     return {
