@@ -23,6 +23,7 @@ import { RefreshToken, RefreshTokenSchema } from './schemas/refresh-token';
         secret: config.get('jwt.secret'),
         signOptions: { expiresIn: '1h' },
       }),
+      global: true,
     }),
   ],
   controllers: [AuthController],

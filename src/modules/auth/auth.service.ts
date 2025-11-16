@@ -43,10 +43,10 @@ export class AuthService {
     const user = await this.userModel.findOne({ email });
     if (!user) throw new UnauthorizedException('Wrong credentials');
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new UnauthorizedException('Wrong credentials');
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) throw new UnauthorizedException('Wrong credentials');
 
-    const tokens = await this.generateUserToken(String(user._id));
+    const tokens = await this.generateUserTokens(String(user._id));
     return {
       ...tokens,
       userId: user._id,
@@ -61,10 +61,10 @@ export class AuthService {
 
     if (!tokenDoc) throw new UnauthorizedException('Invalid refresh token');
 
-    return this.generateUserToken(tokenDoc.userId.toString());
+    return this.generateUserTokens(tokenDoc.userId.toString());
   }
 
-  async generateUserToken(userId: string) {
+  async generateUserTokens(userId: string) {
     const accessToken = this.jwtService.sign({ userId }, { expiresIn: '1h' });
     const refreshToken = randomBytes(64).toString('hex');
 
