@@ -1,58 +1,86 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
+
+type SafeUser = {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+};
 
 @Injectable()
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const newUser = new this.userModel(createUserDto);
-    return newUser.save();
+  private buildSafeUser(user: User): SafeUser {
+    const { _id, name, email, role } = user;
+    const normalizedId =
+      _id instanceof Types.ObjectId ? _id.toString() : String(_id);
+    return {
+      _id: normalizedId,
+      name,
+      email,
+      role,
+    };
   }
 
-  async findAll(): Promise<User[]> {
+  async create(createUserData: CreateUserDto): Promise<SafeUser> {
+    const { email, password } = createUserData;
+
+    const emailExists = await this.userModel.findOne({ email });
+    if (emailExists) throw new BadRequestException('Email already in use');
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new this.userModel({
+      ...createUserData,
+      password: hashedPassword,
+    });
+
+    const savedUser = await user.save();
+    return this.buildSafeUser(savedUser);
+  }
+
+  async findAll(): Promise<SafeUser[]> {
     const allUsers = await this.userModel.find().exec();
-    return allUsers;
+    return allUsers.map((user) => this.buildSafeUser(user));
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: string): Promise<SafeUser> {
     const user = await this.userModel.findById(id).exec();
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
-    return user;
+    return this.buildSafeUser(user);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
-  }
-
-  async findById(id: string): Promise<User | null> {
-    return this.userModel.findById(id).exec();
-  }
-
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, updateUserData: UpdateUserDto): Promise<SafeUser> {
     const updatedUser = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
+      .findByIdAndUpdate(id, updateUserData, { new: true })
       .exec();
 
     if (!updatedUser) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
-    return updatedUser;
+    return this.buildSafeUser(updatedUser);
   }
 
-  async remove(id: string): Promise<User> {
+  async remove(id: string): Promise<SafeUser> {
     const deletedUser = await this.userModel.findByIdAndDelete(id).exec();
 
     if (!deletedUser) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
-    return deletedUser;
+    return this.buildSafeUser(deletedUser);
   }
 }

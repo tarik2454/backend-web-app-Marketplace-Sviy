@@ -1,17 +1,14 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../users/schemas/user.schema';
-import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { RefreshToken } from './schemas/refresh-token';
 import { randomBytes } from 'crypto';
+import * as bcrypt from 'bcrypt';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
@@ -20,21 +17,11 @@ export class AuthService {
     @InjectModel(RefreshToken.name)
     private refreshTokenModel: Model<RefreshToken>,
     private jwtService: JwtService,
+    private usersService: UsersService,
   ) {}
 
   async register(registerData: RegisterDto) {
-    const { email, password, name } = registerData;
-
-    const emailExists = await this.userModel.findOne({ email });
-    if (emailExists) throw new BadRequestException('Email already in use');
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await this.userModel.create({
-      email,
-      password: hashedPassword,
-      name,
-    });
+    return this.usersService.create(registerData);
   }
 
   async login(loginData: LoginDto) {
@@ -84,5 +71,10 @@ export class AuthService {
       userId,
       expiryDate,
     });
+  }
+
+  async logout(userId: string) {
+    await this.refreshTokenModel.deleteMany({ userId });
+    return { message: 'Logged out successfully' };
   }
 }

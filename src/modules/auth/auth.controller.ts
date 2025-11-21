@@ -1,4 +1,11 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Request as NestRequest,
+  UnauthorizedException,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -14,7 +21,6 @@ export class AuthController {
   async register(@Body() registerData: RegisterDto) {
     return this.authService.register(registerData);
   }
-
   @Public()
   @Post('login')
   async login(@Body() loginData: LoginDto) {
@@ -25,5 +31,13 @@ export class AuthController {
   @Post('refresh')
   async refreshToken(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken(dto.refreshToken);
+  }
+
+  @Post('logout')
+  async logout(@NestRequest() req: Request) {
+    if (!req.userId) {
+      throw new UnauthorizedException('User ID not found in request');
+    }
+    return this.authService.logout(req.userId);
   }
 }
