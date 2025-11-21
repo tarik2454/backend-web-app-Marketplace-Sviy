@@ -40,6 +40,15 @@ export class AuthService {
     };
   }
 
+  async getCurrentUser(userId: string) {
+    return this.usersService.findOne(userId);
+  }
+
+  async logout(userId: string) {
+    await this.refreshTokenModel.deleteMany({ userId });
+    return { message: 'Logged out successfully' };
+  }
+
   async refreshToken(oldRefreshToken: string) {
     const tokenDoc = await this.refreshTokenModel.findOneAndDelete({
       token: oldRefreshToken,
@@ -71,10 +80,5 @@ export class AuthService {
       userId,
       expiryDate,
     });
-  }
-
-  async logout(userId: string) {
-    await this.refreshTokenModel.deleteMany({ userId });
-    return { message: 'Logged out successfully' };
   }
 }

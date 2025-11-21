@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   Request as NestRequest,
   UnauthorizedException,
@@ -31,6 +32,14 @@ export class AuthController {
   @Post('refresh')
   async refreshToken(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken(dto.refreshToken);
+  }
+
+  @Get('me')
+  async getCurrentUser(@NestRequest() req: Request) {
+    if (!req.userId) {
+      throw new UnauthorizedException('User ID not found in request');
+    }
+    return this.authService.getCurrentUser(req.userId);
   }
 
   @Post('logout')
