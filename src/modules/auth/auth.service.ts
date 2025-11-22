@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Body, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -24,20 +24,9 @@ export class AuthService {
     return this.usersService.create(registerData);
   }
 
-  async login(loginData: LoginDto) {
-    const { email, password } = loginData;
-
-    const user = await this.userModel.findOne({ email });
-    if (!user) throw new UnauthorizedException('Wrong credentials');
-
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) throw new UnauthorizedException('Wrong credentials');
-
-    const tokens = await this.generateUserTokens(String(user._id));
-    return {
-      ...tokens,
-      userId: user._id,
-    };
+  async loginUser(userId: string) {
+    const tokens = await this.generateUserTokens(userId);
+    return tokens;
   }
 
   async getCurrentUser(userId: string) {
@@ -49,11 +38,30 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async validateUser(loginData: LoginDto) {
+    const { email, password } = loginData;
+
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new UnauthorizedException('Wrong credentials');
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) throw new UnauthorizedException('Wrong credentials');
+
+    return user;
+  }
+
+  // Refresh token rotation - old refresh token is invalidated and a new one is generated
   async refreshToken(oldRefreshToken: string) {
     const tokenDoc = await this.refreshTokenModel.findOneAndDelete({
       token: oldRefreshToken,
       expiryDate: { $gte: new Date() },
     });
+
+    // Single Refresh Token per User - find one
+    // const tokenDoc = await this.refreshTokenModel.findOne({
+    //   token: oldRefreshToken,
+    //   expiryDate: { $gte: new Date() },
+    // });
 
     if (!tokenDoc) throw new UnauthorizedException('Invalid refresh token');
 
@@ -71,6 +79,7 @@ export class AuthService {
     };
   }
 
+  // Refresh token rotation - new refresh token is generated and stored
   async storeRefreshToken(token: string, userId: string) {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 3);
@@ -80,5 +89,11 @@ export class AuthService {
       userId,
       expiryDate,
     });
+    // Single Refresh Token per User - update one
+    // await this.refreshTokenModel.updateOne(
+    //   { userId },
+    //   { $set: { expiryDate, token } },
+    //   { upsert: true },
+    // );
   }
 }
