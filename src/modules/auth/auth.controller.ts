@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Public } from './public.decorator';
@@ -19,7 +19,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  async register(@Body() registerData: RegisterDto) {
+  async register(@Body() registerData: CreateUserDto) {
     return this.authService.register(registerData);
   }
   @Public()

@@ -10,7 +10,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import config from './config/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './modules/auth/guards/auth.guard';
-import { ChatModule } from './chat/chat.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [

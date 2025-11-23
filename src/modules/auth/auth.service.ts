@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { RegisterDto } from './dto/register.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../users/schemas/user.schema';
@@ -20,7 +20,7 @@ export class AuthService {
     private usersService: UsersService,
   ) {}
 
-  async register(registerData: RegisterDto) {
+  async register(registerData: CreateUserDto) {
     return this.usersService.create(registerData);
   }
 
