@@ -11,6 +11,9 @@ export class RefreshToken extends Document {
 
   @Prop({ required: true })
   expiryDate: Date;
+
+  @Prop({ required: true })
+  issuedAt: Date;
 }
 
 export const RefreshTokenSchema = SchemaFactory.createForClass(RefreshToken);

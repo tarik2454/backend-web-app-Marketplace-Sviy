@@ -21,7 +21,6 @@ import { RefreshToken, RefreshTokenSchema } from './schemas/refresh-token';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('jwt.secret'),
-        signOptions: { expiresIn: '1h' },
       }),
       global: true,
     }),

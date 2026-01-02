@@ -10,6 +10,9 @@ import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 
+const REFRESH_TOKEN_EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000;
+const MAX_SESSION_TIME = 30 * 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -28,10 +31,10 @@ export class AuthService {
     const { email, password } = loginData;
 
     const user = await this.userModel.findOne({ email });
-    if (!user) throw new UnauthorizedException('Wrong credentials');
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) throw new UnauthorizedException('Wrong credentials');
+    if (!passwordMatch) throw new UnauthorizedException('Invalid credentials');
 
     const tokens = await this.generateUserTokens(String(user._id));
     return {
@@ -50,35 +53,58 @@ export class AuthService {
   }
 
   async refreshToken(oldRefreshToken: string) {
-    const tokenDoc = await this.refreshTokenModel.findOneAndDelete({
+    const existingRefreshToken = await this.refreshTokenModel.findOneAndDelete({
       token: oldRefreshToken,
       expiryDate: { $gte: new Date() },
     });
 
-    if (!tokenDoc) throw new UnauthorizedException('Invalid refresh token');
+    if (!existingRefreshToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
-    return this.generateUserTokens(tokenDoc.userId.toString());
+    if (existingRefreshToken.issuedAt) {
+      const issuedAtDate =
+        existingRefreshToken.issuedAt instanceof Date
+          ? existingRefreshToken.issuedAt
+          : new Date(existingRefreshToken.issuedAt);
+
+      const maxLifetimeDate = new Date(
+        issuedAtDate.getTime() + MAX_SESSION_TIME,
+      );
+
+      if (new Date() > maxLifetimeDate) {
+        throw new UnauthorizedException('Session expired. Please login again.');
+      }
+    }
+
+    return this.generateUserTokens(
+      existingRefreshToken.userId.toString(),
+      existingRefreshToken.issuedAt,
+    );
   }
 
-  async generateUserTokens(userId: string) {
-    const accessToken = this.jwtService.sign({ userId }, { expiresIn: '1h' });
+  async generateUserTokens(userId: string, issuedAt?: Date) {
+    const accessToken = this.jwtService.sign({ userId }, { expiresIn: '15m' });
     const refreshToken = randomBytes(64).toString('hex');
 
-    await this.storeRefreshToken(refreshToken, userId);
+    await this.storeRefreshToken(refreshToken, userId, issuedAt);
     return {
       accessToken,
       refreshToken,
     };
   }
 
-  async storeRefreshToken(token: string, userId: string) {
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 3);
+  async storeRefreshToken(token: string, userId: string, issuedAt?: Date) {
+    const now = new Date();
+    const tokenIssuedAt = issuedAt || now;
+
+    const expiryDate = new Date(now.getTime() + REFRESH_TOKEN_EXPIRATION_TIME);
 
     await this.refreshTokenModel.create({
       token,
       userId,
       expiryDate,
+      issuedAt: tokenIssuedAt,
     });
   }
 }
